@@ -1,0 +1,25 @@
+{
+  "app/page.tsx -> @/components/BootScreen": {
+    "id": 3734,
+    "files": [
+      "static/chunks/756.7c1cc69776b9e9d3.js",
+      "static/chunks/734.cfe10c6d2f2cf524.js"
+    ]
+  },
+  "app/page.tsx -> @/components/Desktop": {
+    "id": 2977,
+    "files": [
+      "static/chunks/756.7c1cc69776b9e9d3.js",
+      "static/chunks/233.8cea5af43b89211f.js",
+      "static/chunks/977.3a4a6e132c0d66f0.js"
+    ]
+  },
+  "app/page.tsx -> @/components/OOBEScreen": {
+    "id": 5451,
+    "files": [
+      "static/chunks/756.7c1cc69776b9e9d3.js",
+      "static/chunks/353.ea095a3e71584c7a.js",
+      "static/chunks/451.79848212c5998aa9.js"
+    ]
+  }
+}

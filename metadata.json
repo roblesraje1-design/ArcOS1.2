@@ -1,0 +1,12 @@
+{
+  "name": "Remix: WebOS 1.0",
+  "description": "A Linux-style web operating system with UV proxy browser, terminal, file system, and EOSL Translator.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
