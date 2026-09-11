@@ -23,6 +23,8 @@ import Weather from './apps/Weather';
 import GoogleDocs from './apps/GoogleDocs';
 import GoogleSlides from './apps/GoogleSlides';
 import GamesApp from './apps/GamesApp';
+import HyperX from './apps/HyperX';
+import VanguardRestore from './apps/VanguardRestore';
 
 export default function WindowManager() {
   const { windows, customApps } = useOSStore();
@@ -95,6 +97,13 @@ export default function WindowManager() {
             break;
           case 'games':
             AppContent = <GamesApp />;
+            break;
+          case 'hyperx':
+            AppContent = <HyperX />;
+            break;
+          case 'vanguard':
+          case 'vanguardrestore':
+            AppContent = <VanguardRestore />;
             break;
           default:
             // Handle URL-based Web Apps / iFrames

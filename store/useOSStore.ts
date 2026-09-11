@@ -169,6 +169,9 @@ interface OSState {
   setScreenLocked: (locked: boolean) => void;
   toggleScreenLock: () => void;
 
+  isBiosActive: boolean;
+  setBiosActive: (active: boolean) => void;
+
   systemState: {
     wifi: boolean;
     bluetooth: boolean;
@@ -453,6 +456,9 @@ export const useOSStore = create<OSState>((set, get) => ({
     const current = get().isScreenLocked;
     get().setScreenLocked(!current);
   },
+
+  isBiosActive: false,
+  setBiosActive: (active) => set({ isBiosActive: active }),
 
   systemState: {
     wifi: true,

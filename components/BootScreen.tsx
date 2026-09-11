@@ -46,10 +46,31 @@ export function playArcOSBootSound() {
 }
 
 export function BootScreen() {
-  const { isBooting, setBooting } = useOSStore();
+  const { isBooting, setBooting, setBiosActive } = useOSStore();
   const [progress, setProgress] = useState(0);
   const [bootPhase, setBootPhase] = useState('Initializing ArcOS Kernel...');
   const soundPlayedRef = useRef(false);
+  const keyPressCountRef = useRef(0);
+
+  useEffect(() => {
+    if (!isBooting) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'a' || e.key === 'A') {
+        keyPressCountRef.current += 1;
+        if (keyPressCountRef.current >= 4) {
+          setBooting(false);
+          setBiosActive(true);
+        }
+      } else if (e.key === 'F2' || e.key === 'Delete') {
+        setBooting(false);
+        setBiosActive(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isBooting, setBooting, setBiosActive]);
 
   useEffect(() => {
     if (!isBooting) return;
