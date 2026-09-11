@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function AppInstaller() {
-  const { installingApp, setInstallationProgress, finishInstallation, addDesktopItem, addCustomApp } = useOSStore();
+  const { installingApp, setInstallationProgress, finishInstallation, addDesktopItem, addCustomApp, addWebApp } = useOSStore();
   
   const [stage, setStage] = useState<'intro' | 'scanning' | 'discovery' | 'installing' | 'finished'>('intro');
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -30,6 +30,7 @@ export default function AppInstaller() {
   const [appTitle, setAppTitle] = useState('My Custom App');
   const [selectedIconName, setSelectedIconName] = useState('Code2');
   const [heuristicReport, setHeuristicReport] = useState('Evaluating application logic...');
+  const [isGame, setIsGame] = useState(false);
 
   // Available icon vectors to select in Discovery page
   const iconCollection = [
@@ -72,6 +73,7 @@ export default function AppInstaller() {
         setAppTitle(installingApp.appData?.title || 'My Custom App');
         setSelectedIconName(iconGuess);
         setHeuristicReport(docReport);
+        setIsGame(iconGuess === 'Gamepad2' || Boolean(installingApp.appData?.isGame));
       }, 0);
 
       // Stage transition timers
@@ -120,15 +122,29 @@ export default function AppInstaller() {
   const handleFinishAndShortcut = () => {
     if (!installingApp.appData) return;
     
-    // Create an immutable copy with the user's customized name and icon
+    // Create an immutable copy with the user's customized name, icon, and isGame flag
     const finalizedApp = {
       ...installingApp.appData,
       title: appTitle,
-      icon: selectedIconName
+      name: appTitle,
+      icon: selectedIconName,
+      isGame,
+      category: isGame ? 'Games' : (installingApp.appData.category || 'Custom'),
     };
     
     // Register custom app definition into stored apps array
     addCustomApp(finalizedApp);
+    addWebApp({
+      id: finalizedApp.id,
+      name: appTitle,
+      url: finalizedApp.url || '',
+      category: isGame ? 'Games' : 'Custom',
+      iconName: selectedIconName,
+      isGame,
+      inLaunchpad: true,
+      inDesktop: true,
+      inDock: true,
+    } as any);
     
     // Physical launch shortcut added to desktop
     const customShortcutId = `shortcut-${Date.now()}`;
@@ -273,6 +289,30 @@ export default function AppInstaller() {
                           );
                         })}
                      </div>
+                  </div>
+
+                  {/* Is Game Toggle Question */}
+                  <div
+                    onClick={() => setIsGame(!isGame)}
+                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                      isGame
+                        ? 'bg-amber-500/10 border-amber-500/50 text-amber-300'
+                        : 'bg-black/20 border-white/10 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <Gamepad2 size={18} className={isGame ? 'text-amber-400' : 'text-zinc-500'} />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold">Is this app a Game?</span>
+                        <span className="text-[10px] opacity-75">Categorizes app inside Arc Arcade / Games App</span>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isGame}
+                      onChange={(e) => setIsGame(e.target.checked)}
+                      className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
+                    />
                   </div>
 
                   <button 

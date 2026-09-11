@@ -9,6 +9,7 @@ export interface WindowState {
   isOpen: boolean;
   isMinimized: boolean;
   isMaximized: boolean;
+  isFullscreen?: boolean;
   zIndex: number;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -23,6 +24,19 @@ export interface DesktopItem {
   appId?: string;
   icon?: any;
   position: { x: number; y: number };
+}
+
+export interface WebApp {
+  id: string;
+  name: string;
+  url: string;
+  category?: string;
+  iconName?: string;
+  color?: string;
+  bgGradient?: string;
+  inLaunchpad?: boolean;
+  inDesktop?: boolean;
+  inDock?: boolean;
 }
 
 export interface Widget {
@@ -56,12 +70,54 @@ interface OSState {
   updateWindowPosition: (id: string, position: { x: number; y: number }) => void;
   updateWindowSize: (id: string, size: { width: number; height: number }) => void;
   updateWindowSnap: (id: string, snapState: WindowState['snapState']) => void;
+  toggleFullscreen: (id: string) => void;
+
+  // macOS Spotlight Search
+  isSpotlightOpen: boolean;
+  toggleSpotlight: () => void;
+  closeSpotlight: () => void;
+
+  // macOS AI Assistant Popup
+  isAIAssistantOpen: boolean;
+  toggleAIAssistant: () => void;
+  closeAIAssistant: () => void;
+
+  // macOS / One UI Control Center
+  isControlCenterOpen: boolean;
+  toggleControlCenter: () => void;
+  closeControlCenter: () => void;
+
+  // Control Center Quick Calculator Popup
+  isCalculatorPopupOpen: boolean;
+  toggleCalculatorPopup: () => void;
+  closeCalculatorPopup: () => void;
+
+  // macOS Launchpad
+  isLaunchpadOpen: boolean;
+  toggleLaunchpad: () => void;
+  closeLaunchpad: () => void;
+
+  // macOS Menu Bar dropdown
+  activeMenuDropdown: string | null;
+  setActiveMenuDropdown: (menu: string | null) => void;
 
   // Desktop Items
   desktopItems: DesktopItem[];
   addDesktopItem: (item: DesktopItem) => void;
   removeDesktopItem: (id: string) => void;
   updateDesktopItemPosition: (id: string, x: number, y: number) => void;
+  addToDesktop: (appId: string, name: string) => void;
+  removeFromDesktop: (appId: string) => void;
+
+  // Dock Management
+  dockAppIds: string[];
+  addToDock: (appId: string) => void;
+  removeFromDock: (appId: string) => void;
+
+  // Web Apps / iFrame Apps
+  webApps: WebApp[];
+  addWebApp: (webApp: WebApp) => void;
+  removeWebApp: (id: string) => void;
 
   // Widgets
   widgets: Widget[];
@@ -100,6 +156,7 @@ interface OSState {
 
   isTaskViewOpen: boolean;
   toggleTaskView: () => void;
+  openTaskView: () => void;
   closeTaskView: () => void;
 
   isPersonalizationMenuOpen: boolean;
@@ -107,6 +164,10 @@ interface OSState {
 
   isLockScreenVisible: boolean;
   setLockScreenVisible: (visible: boolean) => void;
+
+  isScreenLocked: boolean;
+  setScreenLocked: (locked: boolean) => void;
+  toggleScreenLock: () => void;
 
   systemState: {
     wifi: boolean;
@@ -119,10 +180,22 @@ interface OSState {
     battery: number;
     // Expanded for 50+ settings target
     theme: 'light' | 'dark' | 'glass';
+    accentColor: string;
     transparency: boolean;
     taskbarAlignment: 'left' | 'center';
     searchVisible: boolean;
     widgetsVisible: boolean;
+    autoHideDock: boolean;
+    dockPosition: 'bottom' | 'left' | 'right';
+    dockSize: number;
+    dockMagnification: boolean;
+    dockStyle: 'macos-glass' | 'macos-bigsur' | 'neumorphic' | 'cyberpunk' | 'pill-compact' | 'windows-center' | 'windows-11';
+    iconStyle?: 'macos' | 'chromeos' | 'windows' | 'android';
+    windowManagerSensitivity: 'low' | 'medium' | 'high' | 'off';
+    blobModeEnabled: boolean;
+    airdrop: boolean;
+    dnd: boolean;
+    screenLight: boolean;
     notificationsEnabled: boolean;
     focusMode: boolean;
     location: boolean;
@@ -165,12 +238,6 @@ interface OSState {
   // Splash/Update State
   activeSplashScreen: string | null; // appId
   closeSplashScreen: () => void;
-
-  // BIOS and Recovery Core
-  isBiosActive: boolean;
-  setBiosActive: (active: boolean) => void;
-  isSystemCorrupted: boolean;
-  setSystemCorrupted: (corrupted: boolean) => void;
 }
 
 export const useOSStore = create<OSState>((set, get) => ({
@@ -182,15 +249,82 @@ export const useOSStore = create<OSState>((set, get) => ({
   accentColor: '#3b82f6',
   
   desktopItems: [
-    { id: 'dt-files', name: 'File Explorer', type: 'app', appId: 'files', position: { x: 20, y: 20 } },
-    { id: 'dt-settings', name: 'Settings', type: 'app', appId: 'settings', position: { x: 20, y: 120 } },
-    { id: 'dt-browser', name: 'Edge', type: 'app', appId: 'browser', position: { x: 20, y: 220 } },
+    { id: 'dt-rammerhead', name: 'Rammerhead', type: 'app', appId: 'browser', position: { x: 24, y: 36 } },
+    { id: 'dt-settings', name: 'Settings', type: 'app', appId: 'settings', position: { x: 24, y: 126 } },
+    { id: 'dt-files', name: 'File Explorer', type: 'app', appId: 'files', position: { x: 24, y: 216 } },
+    { id: 'dt-weather', name: 'Weather', type: 'app', appId: 'weather', position: { x: 24, y: 306 } },
+    { id: 'dt-drive', name: 'Google Drive', type: 'app', appId: 'drive', position: { x: 24, y: 396 } },
+    { id: 'dt-clock', name: 'Clock', type: 'app', appId: 'clock', position: { x: 24, y: 486 } },
+    { id: 'dt-docs', name: 'Google Docs', type: 'app', appId: 'docs', position: { x: 124, y: 36 } },
+    { id: 'dt-arcai', name: 'Arc AI', type: 'app', appId: 'neuralcore', position: { x: 124, y: 126 } },
+    { id: 'dt-slides', name: 'Google Slides', type: 'app', appId: 'slides', position: { x: 124, y: 216 } },
   ],
   addDesktopItem: (item) => set((state) => ({ desktopItems: [...state.desktopItems, item] })),
-  removeDesktopItem: (id) => set((state) => ({ desktopItems: state.desktopItems.filter(i => i.id !== id) })),
+  removeDesktopItem: (id) => set((state) => ({ desktopItems: state.desktopItems.filter(i => i.id !== id && i.appId !== id) })),
   updateDesktopItemPosition: (id, x, y) => set((state) => ({
     desktopItems: state.desktopItems.map(i => i.id === id ? { ...i, position: { x, y } } : i)
   })),
+  addToDesktop: (appId: string, name: string) => {
+    const exists = get().desktopItems.some((i) => i.appId === appId);
+    if (exists) return;
+    const count = get().desktopItems.length;
+    const col = Math.floor(count / 6);
+    const row = count % 6;
+    const newItem: DesktopItem = {
+      id: `dt-${appId}-${Date.now()}`,
+      name,
+      type: 'app',
+      appId,
+      position: { x: 24 + col * 100, y: 36 + row * 90 },
+    };
+    set((state) => ({ desktopItems: [...state.desktopItems, newItem] }));
+  },
+  removeFromDesktop: (appId: string) => {
+    set((state) => ({
+      desktopItems: state.desktopItems.filter((i) => i.appId !== appId && i.id !== appId),
+    }));
+  },
+
+  dockAppIds: [
+    'browser',
+    'settings',
+    'files',
+    'drive',
+    'gmail',
+    'meet',
+    'keep',
+    'calculator',
+    'neuralcore',
+    'weather',
+    'terminal',
+    'iframe',
+  ],
+  addToDock: (appId: string) => {
+    if (get().dockAppIds.includes(appId)) return;
+    set((state) => ({ dockAppIds: [...state.dockAppIds, appId] }));
+  },
+  removeFromDock: (appId: string) => {
+    set((state) => ({ dockAppIds: state.dockAppIds.filter((id) => id !== appId) }));
+  },
+
+  webApps: [],
+  addWebApp: (webApp: WebApp) => {
+    set((state) => ({ webApps: [...state.webApps, webApp] }));
+    if (webApp.inDesktop) {
+      get().addToDesktop(webApp.id, webApp.name);
+    }
+    if (webApp.inDock) {
+      get().addToDock(webApp.id);
+    }
+  },
+  removeWebApp: (id: string) => {
+    set((state) => ({
+      webApps: state.webApps.filter((w) => w.id !== id),
+      windows: state.windows.filter((w) => w.appId !== id),
+      desktopItems: state.desktopItems.filter((i) => i.appId !== id),
+      dockAppIds: state.dockAppIds.filter((d) => d !== id),
+    }));
+  },
 
   widgets: [],
   addWidget: (type, position, props) => set((state) => ({
@@ -235,8 +369,69 @@ export const useOSStore = create<OSState>((set, get) => ({
   toggleQuickSettings: () => set((state) => ({ isQuickSettingsOpen: !state.isQuickSettingsOpen, isStartMenuOpen: false, isTaskViewOpen: false })),
   closeQuickSettings: () => set({ isQuickSettingsOpen: false }),
 
+  // macOS Spotlight Search
+  isSpotlightOpen: false,
+  toggleSpotlight: () => set((state) => ({
+    isSpotlightOpen: !state.isSpotlightOpen,
+    isAIAssistantOpen: false,
+    isControlCenterOpen: false,
+    isLaunchpadOpen: false,
+    activeMenuDropdown: null
+  })),
+  closeSpotlight: () => set({ isSpotlightOpen: false }),
+
+  // macOS AI Assistant Popup
+  isAIAssistantOpen: false,
+  toggleAIAssistant: () => set((state) => ({
+    isAIAssistantOpen: !state.isAIAssistantOpen,
+    isSpotlightOpen: false,
+    isControlCenterOpen: false,
+    isLaunchpadOpen: false,
+    activeMenuDropdown: null
+  })),
+  closeAIAssistant: () => set({ isAIAssistantOpen: false }),
+
+  // macOS / One UI Control Center
+  isControlCenterOpen: false,
+  toggleControlCenter: () => set((state) => ({
+    isControlCenterOpen: !state.isControlCenterOpen,
+    isSpotlightOpen: false,
+    isAIAssistantOpen: false,
+    isLaunchpadOpen: false,
+    isCalculatorPopupOpen: false,
+    activeMenuDropdown: null
+  })),
+  closeControlCenter: () => set({ isControlCenterOpen: false }),
+
+  // Control Center Quick Calculator Popup
+  isCalculatorPopupOpen: false,
+  toggleCalculatorPopup: () => set((state) => ({
+    isCalculatorPopupOpen: !state.isCalculatorPopupOpen,
+    isSpotlightOpen: false,
+    isAIAssistantOpen: false,
+    isLaunchpadOpen: false,
+    activeMenuDropdown: null
+  })),
+  closeCalculatorPopup: () => set({ isCalculatorPopupOpen: false }),
+
+  // macOS Launchpad
+  isLaunchpadOpen: false,
+  toggleLaunchpad: () => set((state) => ({
+    isLaunchpadOpen: !state.isLaunchpadOpen,
+    isSpotlightOpen: false,
+    isAIAssistantOpen: false,
+    isControlCenterOpen: false,
+    activeMenuDropdown: null
+  })),
+  closeLaunchpad: () => set({ isLaunchpadOpen: false }),
+
+  // macOS Menu Bar dropdown
+  activeMenuDropdown: null,
+  setActiveMenuDropdown: (menu) => set({ activeMenuDropdown: menu }),
+
   isTaskViewOpen: false,
   toggleTaskView: () => set((state) => ({ isTaskViewOpen: !state.isTaskViewOpen, isStartMenuOpen: false, isQuickSettingsOpen: false })),
+  openTaskView: () => set({ isTaskViewOpen: true, isStartMenuOpen: false, isQuickSettingsOpen: false }),
   closeTaskView: () => set({ isTaskViewOpen: false }),
 
   isPersonalizationMenuOpen: false,
@@ -245,20 +440,46 @@ export const useOSStore = create<OSState>((set, get) => ({
   isLockScreenVisible: false,
   setLockScreenVisible: (visible) => set({ isLockScreenVisible: visible }),
 
+  isScreenLocked: false,
+  setScreenLocked: (locked) => {
+    set({ isScreenLocked: locked, isControlCenterOpen: false });
+    if (locked && typeof document !== 'undefined') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.().catch(() => {});
+      }
+    }
+  },
+  toggleScreenLock: () => {
+    const current = get().isScreenLocked;
+    get().setScreenLocked(!current);
+  },
+
   systemState: {
     wifi: true,
-    bluetooth: false,
+    bluetooth: true,
     airplane: false,
     batterySaver: false,
     nightLight: false,
-    volume: 50,
+    volume: 65,
     brightness: 100,
     battery: 88,
     theme: 'dark',
+    accentColor: '#3b82f6',
     transparency: true,
     taskbarAlignment: 'center',
     searchVisible: true,
     widgetsVisible: false,
+    autoHideDock: true,
+    dockPosition: 'bottom',
+    dockSize: 54,
+    dockMagnification: true,
+    dockStyle: 'macos-glass',
+    iconStyle: 'macos',
+    windowManagerSensitivity: (typeof window !== 'undefined' ? (localStorage.getItem('arcos_wm_sensitivity') as any) : null) || 'low',
+    blobModeEnabled: false,
+    airdrop: true,
+    dnd: false,
+    screenLight: false,
     notificationsEnabled: true,
     focusMode: false,
     location: true,
@@ -295,6 +516,7 @@ export const useOSStore = create<OSState>((set, get) => ({
     if (typeof window !== 'undefined') {
       if (key === 'isOOBECompleted') localStorage.setItem('arcos_oobe_complete', String(value));
       if (key === 'aiCoreEnabled') localStorage.setItem('arcos_aicore_enabled', String(value));
+      if (key === 'windowManagerSensitivity') localStorage.setItem('arcos_wm_sensitivity', String(value));
       if (key === 'username') localStorage.setItem('arcos_username', String(value));
       if (key === 'uemail') localStorage.setItem('arcos_uemail', String(value));
       if (key === 'password') {
@@ -356,42 +578,19 @@ export const useOSStore = create<OSState>((set, get) => ({
     }));
   },
 
-  customApps: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('arcos_custom_apps') || '[]') : [],
-  addCustomApp: (app) => set((state) => {
-    const updated = [...state.customApps, app];
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('arcos_custom_apps', JSON.stringify(updated));
-    }
-    return { 
-      customApps: updated,
-      activeSplashScreen: null // Remove splash screen for newly installed apps
-    };
-  }),
-  removeCustomApp: (id) => set((state) => {
-    const updated = state.customApps.filter(a => a.id !== id);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('arcos_custom_apps', JSON.stringify(updated));
-    }
-    return {
-      customApps: updated,
-      windows: state.windows.filter(w => w.appId !== id),
-      desktopItems: state.desktopItems.filter(i => i.appId !== id)
-    };
-  }),
+  customApps: [],
+  addCustomApp: (app) => set((state) => ({ 
+    customApps: [...state.customApps, app],
+    activeSplashScreen: app.id 
+  })),
+  removeCustomApp: (id) => set((state) => ({
+     customApps: state.customApps.filter(a => a.id !== id),
+     windows: state.windows.filter(w => w.appId !== id),
+     desktopItems: state.desktopItems.filter(i => i.appId !== id)
+  })),
 
   activeSplashScreen: null,
   closeSplashScreen: () => set({ activeSplashScreen: null }),
-
-  // BIOS and Recovery State Core
-  isBiosActive: false,
-  setBiosActive: (active) => set({ isBiosActive: active }),
-  isSystemCorrupted: typeof window !== 'undefined' ? localStorage.getItem('arcos_system_corrupted') === 'true' : false,
-  setSystemCorrupted: (corrupted) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('arcos_system_corrupted', String(corrupted));
-    }
-    set({ isSystemCorrupted: corrupted });
-  },
 
   setWallpaper: (url) => set({ wallpaper: url }),
   setAccentColor: (color) => set({ accentColor: color }),
@@ -461,5 +660,19 @@ export const useOSStore = create<OSState>((set, get) => ({
   updateWindowSnap: (id, snapState) =>
     set((state) => ({
       windows: state.windows.map((w) => (w.id === id ? { ...w, snapState, isMaximized: false } : w)),
+    })),
+  toggleFullscreen: (id) =>
+    set((state) => ({
+      windows: state.windows.map((w) =>
+        w.id === id
+          ? {
+              ...w,
+              isFullscreen: !w.isFullscreen,
+              isMaximized: !w.isFullscreen,
+              isMinimized: false,
+              snapState: 'none',
+            }
+          : w
+      ),
     })),
 }));

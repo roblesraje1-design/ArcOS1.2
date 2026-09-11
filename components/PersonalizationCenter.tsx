@@ -119,7 +119,7 @@ export default function PersonalizationCenter() {
                   <div className="grid grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {filteredWallpapers.map((w) => (
                       <motion.button 
-                        key={w.name}
+                        key={w.url}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {

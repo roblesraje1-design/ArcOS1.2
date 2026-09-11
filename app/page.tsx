@@ -8,18 +8,14 @@ import { useOSStore } from '@/store/useOSStore';
 const BootScreen = dynamicHelper(() => import('@/components/BootScreen').then((m) => m.BootScreen), { ssr: false });
 const Desktop = dynamicHelper(() => import('@/components/Desktop'), { ssr: false });
 const OOBEScreen = dynamicHelper(() => import('@/components/OOBEScreen'), { ssr: false });
-const BIOS = dynamicHelper(() => import('@/components/BIOS'), { ssr: false });
 
 export default function Home() {
   const isBooting = useOSStore((state) => state.isBooting);
   const isOOBECompleted = useOSStore((state) => state.systemState.isOOBECompleted);
-  const isBiosActive = useOSStore((state) => state.isBiosActive);
 
   return (
     <main className="h-screen w-screen overflow-hidden bg-black">
-      {isBiosActive ? (
-        <BIOS />
-      ) : isBooting ? (
+      {isBooting ? (
         <BootScreen />
       ) : !isOOBECompleted ? (
         <OOBEScreen />

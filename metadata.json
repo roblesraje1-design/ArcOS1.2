@@ -1,6 +1,6 @@
 {
   "name": "Remix: WebOS 1.0",
-  "description": "A Linux-style web operating system with UV proxy browser, terminal, file system, and EOSL Translator.",
+  "description": "A macOS-inspired web operating system featuring Google Workspace integration, iFrame web app maker, Mission Control task view, Rammerhead browser proxy, App-specific context menus, AI Spotlight search, and System Settings.",
   "requestFramePermissions": [
     "camera",
     "microphone",
